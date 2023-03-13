@@ -24,17 +24,33 @@ parser.add_argument(
     "--brush",
     type=str,
     help="tiling|randomwalk",
+    default="tiling",
 )
 parser.add_argument(
     "--lines",
     type=int,
     help="-1: disable",
 )
+parser.add_argument(
+    "--verbose",
+    type=int,
+    help="0|1",
+    default=0,
+)
+parser.add_argument(
+    "--dryrun",
+    type=int,
+    help="0|1",
+    default=1,
+)
 args = parser.parse_args()
 
 success = False
 if args.task == "render":
-    canvas = Canvas()
+    canvas = Canvas(
+        dryrun=args.dryrun == 1,
+        verbose=args.verbose == 1,
+    )
 
     success = True
     if args.brush == "tiling":
@@ -55,11 +71,15 @@ if args.task == "render":
 
         logger.info(f"loaded {len(content)} line(s) of text.")
 
+        image_filename = file.set_extension(args.filename, "png")
         for index in tqdm(range(len(content))):
             canvas.generate(brush, content[index])
             brush.move(canvas)
 
-        canvas.save(file.set_extension(args.filename, "png"))
+            if args.verbose:
+                canvas.save(file.add_postfix(image_filename, f"{index:05d}"))
+
+        canvas.save(image_filename)
 else:
     logger.error(f"-{NAME}: {args.task}: command not found.")
 
